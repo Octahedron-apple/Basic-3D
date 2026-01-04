@@ -52,3 +52,13 @@ def unit_cube(scale):
                 points.append(point)
                     
     return points
+def unit_Sphere(scale):
+    points = []
+    for x in range(-2,3):
+        for y in range(-2,3):
+            for z in range(-2,3):
+                vec = np.array([x, y, z])*0.5
+                magnitude = np.linalg.norm(vec)
+                unit_vec = vec / magnitude
+                point = unit_vec * scale
+                points.append(point)
