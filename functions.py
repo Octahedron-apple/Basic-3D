@@ -42,3 +42,13 @@ def translate(points, shift):
 def print_points(points):
     formatted_points = [f"({p[0]},{p[1]},{p[2]})" for p in points]
     print(",".join(formatted_points))
+def unit_cube(scale):
+    points = []
+    for x in [-1, 0, 1]:
+        for y in [-1, 0, 1]:
+            for z in [-1, 0, 1]:
+               
+                point=np.array([x,y,z])*scale
+                points.append(point)
+                    
+    return points
