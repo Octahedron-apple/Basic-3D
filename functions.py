@@ -32,3 +32,10 @@ def rotate(points, angle, axis):
         rotated_points.append(rotated_point)
     points=rotated_points
     return rotated_points
+def translate(points, shift):
+    tp = []
+    for i in points:
+        np = i + shift 
+        tp.append(np)
+    points=tp  
+    return tp
