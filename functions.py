@@ -39,3 +39,6 @@ def translate(points, shift):
         tp.append(np)
     points=tp  
     return tp
+def print_points(points):
+    formatted_points = [f"({p[0]},{p[1]},{p[2]})" for p in points]
+    print(",".join(formatted_points))
