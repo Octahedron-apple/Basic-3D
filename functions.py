@@ -70,3 +70,22 @@ def threeDtotwoD(points, camera, focal_length):
     for i in range(len(points)):
         return_points.append(np.array([focal_length*relative[i][0]/relative[i][2],focal_length*relative[i][1]/relative[i][2]]))
     return return_points
+def draw_to_image(points, filename="Out.png"):
+    img = Image.new('RGB', (500, 500), 'white')
+    draw = ImageDraw.Draw(img)
+    center_x, center_y = 250, 250
+    for point in points:
+        x=point[0]
+        y=point[1]
+        screen_x = center_x + x
+        screen_y = center_y + y
+        radius = 2
+        draw.ellipse(
+            (screen_x - radius, screen_y - radius, screen_x + radius, screen_y + radius), 
+            fill='black'
+        )
+    img.save(filename)
+def print_points_2D(points):
+    
+    formatted_points = [f"({p[0]},{p[1]})" for p in points]
+    print(",".join(formatted_points))
