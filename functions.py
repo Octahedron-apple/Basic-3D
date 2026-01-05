@@ -68,5 +68,5 @@ def threeDtotwoD(points, camera, focal_length):
         relative.append(points[i]-camera)
     return_points=[]
     for i in range(len(points)):
-        return_points.append(np.array([focal_length*relative[i][0]/relative[i][2],focal_length*relative[i][0]/relative[i][2]]))
+        return_points.append(np.array([focal_length*relative[i][0]/relative[i][2],focal_length*relative[i][1]/relative[i][2]]))
     return return_points
