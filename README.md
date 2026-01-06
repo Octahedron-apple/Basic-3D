@@ -54,13 +54,13 @@ sudo apt-get install python3-tk
 
 There are three example scripts provided to demonstrate different functionalities:
 
-### 1. Real-Time Animation (`example3.py`)
+### 1. Real-Time Animation (`example3.py` and `example.py`)
 
 This script creates a GUI window and renders a spinning cube in real-time. It does **not** require FFmpeg and does not save any files.
 
 ```bash
 python3 example3.py
-
+python3 example4.py
 ```
 
 * **Behavior**: Opens a window titled "3D animation" displaying a rotating point-cloud cube.
