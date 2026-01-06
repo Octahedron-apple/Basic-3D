@@ -65,6 +65,7 @@ def unit_Sphere(scale):
                 unit_vec = vec / magnitude
                 point = unit_vec * scale
                 points.append(point)
+    return points
 def threeDtotwoD(points, camera, focal_length):
     relative=[]
     for i in range(len(points)):
