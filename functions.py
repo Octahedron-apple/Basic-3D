@@ -33,7 +33,6 @@ def rotate(points, angle, axis):
         
         rotated_point = np.dot(rotation_matrix, point)
         rotated_points.append(rotated_point)
-    points=rotated_points
     return rotated_points
 def translate(points, shift):
     tp = []
@@ -93,3 +92,16 @@ def print_points_2D(points):
     
     formatted_points = [f"({p[0]},{p[1]})" for p in points]
     print(",".join(formatted_points))
+def unit_circle(scale,axis):
+    if axis.upper() == 'X':
+        a = [0,0,scale]
+    elif axis.upper() == 'Y':
+        a = [0,0,scale]
+    elif axis.upper() == 'Z':
+        a = [0,scale,0]
+    else:
+        raise ValueError("Axis must be 'X', 'Y', or 'Z'")
+    points =[]
+    for i in range(20):
+        points.append(rotate(a,18,axis))
+    return points
