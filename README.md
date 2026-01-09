@@ -7,7 +7,7 @@ The project offers two modes of visualization:
 1. **Video Generation**: Renders frames to images and compiles them into an MP4 video file using FFmpeg.
 2. **Real-Time Rendering**: Renders the 3D animation live in a window using Tkinter.
 
-## 📦 Requirements
+##  Requirements
 
 ### Python Libraries
 
@@ -24,7 +24,7 @@ This project requires Python 3 and the following external libraries:
 
 
 
-## ⚙️ Installation
+##  Installation
 
 1. **Clone the repository** (if applicable) or download the source files.
 2. **Install Python Dependencies**:
@@ -50,7 +50,7 @@ sudo apt-get install python3-tk
 
 
 
-## 🚀 How to Run
+##  How to Run
 
 There are three example scripts provided to demonstrate different functionalities:
 
