@@ -105,3 +105,5 @@ def unit_circle(scale,axis):
     for i in range(20):
         points.append(rotate(a,18,axis))
     return points
+def strech():
+    
