@@ -69,6 +69,19 @@ def unit_Sphere(s):
                 ps.append(p)
     return ps
 
+def unit_cone(s):
+    ps = []
+    for i in range(11):
+        h = i / 10.0
+        r = 1.0 - h
+        for j in range(21):
+            a = j * (math.pi * 2 / 20.0)
+            x = r * math.cos(a)
+            y = r * math.sin(a)
+            p = np.array([x, y, h - 0.5]) * s
+            ps.append(p)
+    return ps
+
 def threeDtotwoD(ps, c, f): 
     rl=[]
     for i in range(len(ps)):
