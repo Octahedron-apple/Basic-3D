@@ -1,84 +1,56 @@
 # Basic-3D
 
-**Basic-3D** is a lightweight Python project that demonstrates the fundamentals of 3D graphics programming. It generates 3D point-cloud shapes (cubes and spheres), applies mathematical transformations (rotation and translation), and projects them onto a 2D plane using perspective projection.
+**Basic-3D** is a lightweight Python engine built from scratch to demonstrate the fundamentals of 3D graphics programming. It features a custom object-oriented 3D math engine that handles vector transformations, mathematically generated wireframes and faces, depth-sorting, and perspective projection—all rendered in real-time using Pygame.
 
-The project offers two modes of visualization:
+## Demo
 
-1. **Video Generation**: Renders frames to images and compiles them into an MP4 video file using FFmpeg.
-2. **Real-Time Rendering**: Renders the 3D animation live in a window using Tkinter.
+Here is a 5-second demo of the engine rendering a solid, depth-sorted spinning UV sphere in real-time:
 
-##  Requirements
+![Basic-3D Spinning Sphere Demo](/home/dev/Projects/Basic-3D/Demo/demo_trimmed.webm)
 
-### Python Libraries
+## Features
 
-This project requires Python 3 and the following external libraries:
+- **Custom 3D Math Engine**: Built entirely on NumPy for fast matrix multiplications, allowing for translation, scaling, and rotation across any axis.
+- **Topological Geometry**: Supports complex geometry including Points, Edges (wireframes), and Faces (solid polygons).
+- **Mathematical Mesh Generation**: Generates mathematically perfect UV Spheres (using latitude and longitude loops) to avoid Z-fighting and geometry holes.
+- **Painter's Algorithm**: Implements real-time depth sorting by calculating the average Z-depth of polygons in 3D space, ensuring faces are correctly drawn back-to-front.
+- **Perspective Projection**: Projects 3D coordinates onto a 2D plane based on simulated focal length and camera positioning.
+- **Real-Time Rendering**: Uses Pygame to render solid polygons with overlaid wireframes at 60 FPS in fullscreen.
 
-* **NumPy**: Used for efficient matrix multiplication (rotation matrices) and vector arithmetic.
-* **Pillow (PIL)**: Used by **Example 1 & 2** to draw projected points onto a canvas and save them as PNG images.
-* **Tkinter**: Used by **Example 3** for real-time GUI rendering (usually included with standard Python installations).
+## Requirements
 
-### System Tools
+This project requires **Python 3** and the following libraries:
 
-* **FFmpeg**: Required **only for Example 1 and Example 2**. It is used to compile the sequence of rendered images into a video file.
-* *Note: You must have `ffmpeg` installed on your system and added to your system's PATH for the video generation scripts to work.*
+- **NumPy**: Used for efficient matrix operations and vector arithmetic.
+- **Pygame**: Used for real-time window management, event handling, and drawing polygons/lines.
 
+*(Note: If you are using NixOS, a `shell.nix` is provided that automatically hooks up the necessary X11/Wayland/OpenGL libraries for Pygame).*
 
+## Installation & Execution
 
-##  Installation
-
-1. **Clone the repository** (if applicable) or download the source files.
-2. **Install Python Dependencies**:
-Run the following command in your terminal to install `numpy` and `pillow`:
+1. **Clone the repository**:
 ```bash
-pip install -r requirements.txt
-
+git clone https://github.com/yourusername/Basic-3D.git
+cd Basic-3D
 ```
 
-
-3. **Install FFmpeg** (Only if you plan to generate videos):
-* **Linux (Debian/Ubuntu)**: `sudo apt install ffmpeg`
-* **MacOS**: `brew install ffmpeg`
-* **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html) and add the `bin` folder to your System PATH variables.
-
-
-4. **Tkinter Note (Linux Users)**:
-If `example3.py` fails to run, you may need to install the Tkinter library manually:
+2. **Set up your environment**:
+If you are on standard Linux/MacOS/Windows, create a virtual environment and install the dependencies:
 ```bash
-sudo apt-get install python3-tk
-
+python3 -m venv venv
+source venv/bin/activate
+pip install numpy pygame pillow
 ```
+*If you are on NixOS, simply run `nix-shell`.*
 
-
-
-##  How to Run
-
-There are three example scripts provided to demonstrate different functionalities:
-
-### 1. Real-Time Animation (`example3.py` and `example.py`)
-
-This script creates a GUI window and renders a spinning cube in real-time. It does **not** require FFmpeg and does not save any files.
-
+3. **Run the Engine**:
+Start the real-time fullscreen demo:
 ```bash
-python3 example3.py
-python3 example4.py
+python main.py
 ```
+*Press `ESC` at any time to exit the fullscreen animation.*
 
-* **Behavior**: Opens a window titled "3D animation" displaying a rotating point-cloud cube.
+## Architecture
 
-### 2. Video Generation - Cube (`example1.py`)
-
-Generates a 3D grid cube, rotates it around the X and Y axes, renders individual frames to an `Output` directory, and exports the animation as `exp1.mp4`.
-
-```bash
-python3 example1.py
-
-```
-
-### 3. Video Generation - Sphere (`example2.py`)
-
-Similar to Example 1, but generates a 3D point-cloud sphere and exports the animation as `exp2.mp4`.
-
-```bash
-python3 example2.py
-
-```
+- `functions.py`: Contains the `Point` and `Obj` classes. `Point` handles independent vector math, while `Obj` orchestrates collections of points, manages the topological arrays (`Edges` and `Faces`), and handles the camera projection algorithms.
+- `main.py`: The application entry point. Initializes the Pygame display, sets up the camera, applies continuous rotation, calculates depth-sorting, and executes the drawing calls.

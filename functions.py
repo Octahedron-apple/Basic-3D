@@ -56,6 +56,56 @@ class Point:
 class Obj:
     def __init__(self):
         self.Points = []
+        self.Edges = []
+        self.Faces = []
+
+    def Remove_Duplicate_Points(self, tolerance=1e-5):
+        unique_points = []
+        for point in self.Points:
+            is_duplicate = False
+            for u_point in unique_points:
+                if np.linalg.norm(point.Coordinates - u_point.Coordinates) < tolerance:
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                unique_points.append(point)
+        self.Points = unique_points
+        return self
+
+    def Auto_Triangulate(self):
+        self.Edges = set()
+        self.Faces = set()
+        n = len(self.Points)
+        
+        closest_neighbors = {}
+        for i in range(n):
+            distances = []
+            for j in range(n):
+                if i != j:
+                    dist = np.linalg.norm(self.Points[i].Coordinates - self.Points[j].Coordinates)
+                    distances.append((dist, j))
+            distances.sort(key=lambda x: x[0])
+            top_3 = [idx for d, idx in distances[:3]]
+            closest_neighbors[i] = top_3
+            
+            for j in top_3:
+                edge = tuple(sorted((i, j)))
+                self.Edges.add(edge)
+                
+        for i in range(n):
+            neighbors = closest_neighbors[i]
+            for idx1 in range(len(neighbors)):
+                for idx2 in range(idx1 + 1, len(neighbors)):
+                    j = neighbors[idx1]
+                    k = neighbors[idx2]
+                    edge_jk = tuple(sorted((j, k)))
+                    if edge_jk in self.Edges:
+                        face = tuple(sorted((i, j, k)))
+                        self.Faces.add(face)
+                        
+        self.Edges = list(self.Edges)
+        self.Faces = list(self.Faces)
+        return self
 
     def Rotate(self, angle, axis):
         for point in self.Points:
@@ -94,18 +144,43 @@ class Obj:
                     self.Points.append(Point(point_coords))
         return self
 
-    def Generate_Unit_Sphere(self, scale_factor):
+    def Generate_Unit_Sphere(self, scale_factor, lat_count=12, lon_count=24):
         self.Points = []
-        for x in range(-2, 3):
-            for y in range(-2, 3):
-                for z in range(-2, 3):
-                    vector = np.array([x, y, z]) * 0.5
-                    magnitude = np.linalg.norm(vector)
-                    if magnitude == 0:
-                        continue
-                    unit_vector = vector / magnitude
-                    point_coords = unit_vector * scale_factor
-                    self.Points.append(Point(point_coords))
+        self.Edges = []
+        self.Faces = []
+        
+        for lat_num in range(lat_count + 1):
+            theta = lat_num * math.pi / lat_count 
+            sin_theta = math.sin(theta)
+            cos_theta = math.cos(theta)
+            
+            for lon_num in range(lon_count):
+                phi = lon_num * 2 * math.pi / lon_count 
+                sin_phi = math.sin(phi)
+                cos_phi = math.cos(phi)
+                
+                x = cos_phi * sin_theta
+                y = sin_phi * sin_theta
+                z = cos_theta
+                
+                self.Points.append(Point(np.array([x, y, z]) * scale_factor))
+                
+        for lat_num in range(lat_count):
+            for lon_num in range(lon_count):
+                first = (lat_num * lon_count) + lon_num
+                second = first + lon_count
+                
+                next_lon = (lon_num + 1) % lon_count
+                
+                first_next = (lat_num * lon_count) + next_lon
+                second_next = ((lat_num + 1) * lon_count) + next_lon
+                
+                self.Faces.append((first, second, first_next))
+                self.Faces.append((second, second_next, first_next))
+                
+                self.Edges.append((first, second))
+                self.Edges.append((first, first_next))
+                
         return self
 
     def Generate_Unit_Cone(self, scale_factor):
@@ -140,6 +215,8 @@ class Obj:
 
     def Project_3D_To_2D(self, camera_position, focal_length): 
         projected_obj = Obj()
+        projected_obj.Edges = self.Edges.copy()
+        projected_obj.Faces = self.Faces.copy()
         for point in self.Points:
             rel_point = point.Coordinates - camera_position
             z = rel_point[2]
