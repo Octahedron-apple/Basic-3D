@@ -6,7 +6,7 @@
 
 Here is a 5-second demo of the engine rendering a solid, depth-sorted spinning UV sphere in real-time:
 
-<video src="./Demo/demo_trimmed.webm" controls="controls" muted="muted" autoplay="autoplay" width="100%"></video>
+![Basic-3D Spinning Sphere Demo](./Demo/demo_trimmed.gif)
 
 ## Features
 
