@@ -9,7 +9,6 @@ class Point:
         self.Coordinates = Coordinates
         
     def Rotate(self, angle, axis):
-        # Axis Can be either of 0,1,2 (X,Y,Z)
         angle_radians = math.radians(angle)
         cos_val = math.cos(angle_radians)
         sin_val = math.sin(angle_radians)
@@ -51,6 +50,44 @@ class Point:
 
     def Scale(self, scale_factor):
         self.Coordinates = self.Coordinates * scale_factor
+        return self
+
+class Camera:
+    def __init__(self, position):
+        self.Coordinates = position
+        self.Orientation = np.eye(3)
+        
+    def Translate(self, shift_vector):
+        self.Coordinates = self.Coordinates + shift_vector
+        return self
+        
+    def Rotate(self, angle, axis):
+        angle_radians = math.radians(angle)
+        cos_val = math.cos(angle_radians)
+        sin_val = math.sin(angle_radians)
+        
+        if axis == 0:
+            rotation_matrix = np.array([
+                [1, 0, 0],
+                [0, cos_val, -sin_val],
+                [0, sin_val, cos_val]
+            ])
+        elif axis == 1:
+            rotation_matrix = np.array([
+                [cos_val, 0, sin_val],
+                [0, 1, 0],
+                [-sin_val, 0, cos_val]
+            ])
+        elif axis == 2:
+            rotation_matrix = np.array([
+                [cos_val, -sin_val, 0],
+                [sin_val, cos_val, 0],
+                [0, 0, 1]
+            ])
+        else:
+            raise ValueError("Axis must be 0, 1, or 2 (X, Y, or Z)")
+
+        self.Orientation = np.dot(rotation_matrix, self.Orientation)
         return self
 
 class Obj:
@@ -213,17 +250,28 @@ class Obj:
             self.Points.append(Point(temp_point.Coordinates.copy()))
         return self
 
-    def Project_3D_To_2D(self, camera_position, focal_length): 
+    def Project_3D_To_2D(self, camera, focal_length): 
         projected_obj = Obj()
         projected_obj.Edges = self.Edges.copy()
         projected_obj.Faces = self.Faces.copy()
+        
+        inv_orientation = camera.Orientation.T
+        
         for point in self.Points:
-            rel_point = point.Coordinates - camera_position
-            z = rel_point[2]
+            rel_point = point.Coordinates - camera.Coordinates
+            aligned_point = np.dot(inv_orientation, rel_point)
+            
+            z = aligned_point[2]
             if z == 0: 
                 z = 0.001
-            projected_coords = np.array([focal_length * rel_point[0] / z, focal_length * rel_point[1] / z])
+                
+            projected_coords = np.array([
+                focal_length * aligned_point[0] / z, 
+                focal_length * aligned_point[1] / z,
+                z
+            ])
             projected_obj.Points.append(Point(projected_coords))
+            
         return projected_obj
 
     def Draw_To_Image(self, filename="Out.png"):
