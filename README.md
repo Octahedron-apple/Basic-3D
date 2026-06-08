@@ -8,6 +8,10 @@ Here is a 5-second demo of the engine rendering a solid, depth-sorted spinning U
 
 ![Basic-3D Spinning Sphere Demo](./Demo/demo_trimmed.gif)
 
+And here is a 7-second demo of the custom 3D text engine rendering text using greedy meshing optimizations:
+
+![Basic-3D Text Rendering Demo](./Demo/text_demo.gif)
+
 ## Features
 
 - **Custom 3D Math Engine**: Built entirely on NumPy for fast matrix multiplications, allowing for translation, scaling, and rotation across any axis.
