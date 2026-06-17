@@ -12,6 +12,10 @@ And here is a 7-second demo of the custom 3D text engine rendering text using gr
 
 ![Basic-3D Text Rendering Demo](./Demo/text_demo.gif)
 
+And here is a 10-second demo showcasing a custom parsed and rendered `.obj` model alongside the text engine:
+
+![Basic-3D Penger Demo](./Demo/penger_demo.gif)
+
 ## Features
 
 - **Custom 3D Math Engine**: Built entirely on NumPy for fast matrix multiplications, allowing for translation, scaling, and rotation across any axis.
