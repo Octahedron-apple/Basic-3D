@@ -16,6 +16,10 @@ And here is a 10-second demo showcasing a custom parsed and rendered `.obj` mode
 
 ![Basic-3D Penger Demo](./Demo/penger_demo.gif)
 
+And here is a 20-second demo showcasing the real-time 3D Keplerian simulation of dwarf planets, comets, asteroid belts, and cometary clouds in the minor solar system:
+
+![Basic-3D Solar System Minor Bodies Demo](./Demo/solar_system_demo.gif)
+
 ## Features
 
 - **Custom 3D Math Engine**: Built entirely on NumPy for fast matrix multiplications, allowing for translation, scaling, and rotation across any axis.

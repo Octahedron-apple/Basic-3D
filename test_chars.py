@@ -104,7 +104,9 @@ while running:
     dx, dy, dz = get_movement_input()
     rx, ry = get_rotation_input()
     
-    camera.Translate(np.array([dx * 20.0, dy * 20.0, dz * 20.0]))
+    local_move = np.array([dx * 20.0, dy * 20.0, dz * 20.0])
+    world_move = np.dot(camera.Orientation, local_move)
+    camera.Translate(world_move)
     
     if rx != 0:
         camera.Rotate(rx * 2.0, 1)

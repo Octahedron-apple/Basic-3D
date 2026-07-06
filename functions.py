@@ -90,7 +90,7 @@ class Camera:
         else:
             raise ValueError("Axis must be 0, 1, or 2 (X, Y, or Z)")
 
-        self.Orientation = np.dot(rotation_matrix, self.Orientation)
+        self.Orientation = np.dot(self.Orientation, rotation_matrix)
         return self
 
 class Obj:
@@ -333,36 +333,7 @@ def draw_impostor_sphere(surface, center, radius, color):
     r = int(radius)
     if r <= 0:
         return
-    
-    if r <= 3:
-        pygame.draw.circle(surface, color, (int(cx), int(cy)), max(1, r))
-        return
-        
-    base_r, base_g, base_b = color
-    steps = max(3, min(r, 15))
-    
-    for i in range(steps):
-        t = i / (steps - 1) if steps > 1 else 0.0
-        factor = t * t
-        
-        curr_r = int(base_r + (255 - base_r) * factor * 0.85)
-        curr_g = int(base_g + (255 - base_g) * factor * 0.85)
-        curr_b = int(base_b + (255 - base_b) * factor * 0.85)
-        
-        curr_color = (
-            max(0, min(255, curr_r)),
-            max(0, min(255, curr_g)),
-            max(0, min(255, curr_b))
-        )
-        
-        curr_radius = int(r * (1.0 - t * 0.95))
-        if curr_radius <= 0:
-            curr_radius = 1
-            
-        offset_x = int(cx - t * r * 0.3)
-        offset_y = int(cy - t * r * 0.3)
-        
-        pygame.draw.circle(surface, curr_color, (offset_x, offset_y), curr_radius)
+    pygame.draw.circle(surface, color, (int(cx), int(cy)), max(1, r))
 
 
 def render_scene(screen, width, height, camera, focal_length, objects_with_colors, render_config, theme):
@@ -388,7 +359,7 @@ def render_scene(screen, width, height, camera, focal_length, objects_with_color
         else:
             f_col, l_col, n_col = theme_face, theme_line, theme_node
             
-        if render_config.get("faces", True):
+        if render_config.get("faces", True) and len(obj.Faces) > 0:
             for face in obj.Faces:
                 try:
                     z0 = projected.Points[face[0]].Coordinates[2]
@@ -401,7 +372,7 @@ def render_scene(screen, width, height, camera, focal_length, objects_with_color
                 except IndexError:
                     continue
         
-        elif render_config.get("lines", True):
+        if render_config.get("lines", True) and (not render_config.get("faces", True) or len(obj.Faces) == 0):
             if not obj.Edges:
                 obj.Populate_Edges_From_Faces()
                 

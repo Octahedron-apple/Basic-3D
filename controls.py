@@ -9,8 +9,8 @@ def get_movement_input():
     forward = keys[pygame.K_w]
     backward = keys[pygame.K_s]
     
-    up = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
-    down = keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]
+    up = keys[pygame.K_SPACE]
+    down = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
     
     dx = 0
     dy = 0
