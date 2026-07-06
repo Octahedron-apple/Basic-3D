@@ -3,10 +3,13 @@ import math
 from PIL import Image, ImageDraw
 import os
 import subprocess
+import pygame
+
 
 class Point:
-    def __init__(self, Coordinates):
+    def __init__(self, Coordinates, Radius=None):
         self.Coordinates = Coordinates
+        self.Radius = Radius
         
     def Rotate(self, angle, axis):
         angle_radians = math.radians(angle)
@@ -270,7 +273,7 @@ class Obj:
                 focal_length * aligned_point[1] / z,
                 z
             ])
-            projected_obj.Points.append(Point(projected_coords))
+            projected_obj.Points.append(Point(projected_coords, Radius=point.Radius))
             
         return projected_obj
 
@@ -290,3 +293,195 @@ class Obj:
                 fill='black'
             )
         image.save(filename)
+
+    def Populate_Edges_From_Faces(self):
+        edges_set = set()
+        for face in self.Faces:
+            n = len(face)
+            for i in range(n):
+                edge = tuple(sorted((face[i], face[(i + 1) % n])))
+                edges_set.add(edge)
+        self.Edges = list(edges_set)
+        return self
+
+    def Generate_Impostor_Grid(self, scale_factor=300, grid_size=3):
+        self.Points = []
+        self.Edges = []
+        self.Faces = []
+        
+        if grid_size > 1:
+            steps = np.linspace(-0.5, 0.5, grid_size)
+        else:
+            steps = [0.0]
+            
+        for x in steps:
+            for y in steps:
+                for z in steps:
+                    point_coords = np.array([x, y, z]) * scale_factor
+                    self.Points.append(Point(point_coords, Radius=20.0))
+        return self
+
+    def Generate_Single_Node(self, radius=150.0):
+        self.Points = [Point(np.array([0.0, 0.0, 0.0]), Radius=radius)]
+        self.Edges = []
+        self.Faces = []
+        return self
+
+
+def draw_impostor_sphere(surface, center, radius, color):
+    cx, cy = center
+    r = int(radius)
+    if r <= 0:
+        return
+    
+    if r <= 3:
+        pygame.draw.circle(surface, color, (int(cx), int(cy)), max(1, r))
+        return
+        
+    base_r, base_g, base_b = color
+    steps = max(3, min(r, 15))
+    
+    for i in range(steps):
+        t = i / (steps - 1) if steps > 1 else 0.0
+        factor = t * t
+        
+        curr_r = int(base_r + (255 - base_r) * factor * 0.85)
+        curr_g = int(base_g + (255 - base_g) * factor * 0.85)
+        curr_b = int(base_b + (255 - base_b) * factor * 0.85)
+        
+        curr_color = (
+            max(0, min(255, curr_r)),
+            max(0, min(255, curr_g)),
+            max(0, min(255, curr_b))
+        )
+        
+        curr_radius = int(r * (1.0 - t * 0.95))
+        if curr_radius <= 0:
+            curr_radius = 1
+            
+        offset_x = int(cx - t * r * 0.3)
+        offset_y = int(cy - t * r * 0.3)
+        
+        pygame.draw.circle(surface, curr_color, (offset_x, offset_y), curr_radius)
+
+
+def render_scene(screen, width, height, camera, focal_length, objects_with_colors, render_config, theme):
+    # Allow passing a single object instead of a list
+    if not isinstance(objects_with_colors, list):
+        objects_with_colors = [(objects_with_colors, None)]
+    elif len(objects_with_colors) > 0 and not isinstance(objects_with_colors[0], tuple):
+        objects_with_colors = [(o, None) for o in objects_with_colors]
+        
+    primitives = []
+    
+    for obj_idx, (obj, color_overrides) in enumerate(objects_with_colors):
+        projected = obj.Project_3D_To_2D(camera, focal_length)
+        
+        theme_face = theme["face"]
+        theme_line = theme["line"]
+        theme_node = theme["node"]
+        
+        if color_overrides is not None:
+            f_col = color_overrides[0] if color_overrides[0] is not None else theme_face
+            l_col = color_overrides[1] if color_overrides[1] is not None else theme_line
+            n_col = color_overrides[2] if color_overrides[2] is not None else theme_node
+        else:
+            f_col, l_col, n_col = theme_face, theme_line, theme_node
+            
+        if render_config.get("faces", True):
+            for face in obj.Faces:
+                try:
+                    z0 = projected.Points[face[0]].Coordinates[2]
+                    z1 = projected.Points[face[1]].Coordinates[2]
+                    z2 = projected.Points[face[2]].Coordinates[2]
+                    
+                    if z0 > 0.1 and z1 > 0.1 and z2 > 0.1:
+                        avg_z = (z0 + z1 + z2) / 3.0
+                        primitives.append((avg_z, 'face', face, projected, f_col, l_col))
+                except IndexError:
+                    continue
+        
+        elif render_config.get("lines", True):
+            if not obj.Edges:
+                obj.Populate_Edges_From_Faces()
+                
+            for edge in obj.Edges:
+                try:
+                    z0 = projected.Points[edge[0]].Coordinates[2]
+                    z1 = projected.Points[edge[1]].Coordinates[2]
+                    
+                    if z0 > 0.1 and z1 > 0.1:
+                        avg_z = (z0 + z1) / 2.0
+                        primitives.append((avg_z, 'edge', edge, projected, l_col))
+                except IndexError:
+                    continue
+                    
+        if render_config.get("nodes", True):
+            for i, p in enumerate(obj.Points):
+                try:
+                    z = projected.Points[i].Coordinates[2]
+                    if z > 0.1:
+                        r_3d = p.Radius if p.Radius is not None else render_config.get("default_node_radius", 6.0)
+                        primitives.append((z, 'node', i, projected, n_col, r_3d))
+                except IndexError:
+                    continue
+
+    primitives.sort(key=lambda x: x[0], reverse=True)
+    
+    for prim in primitives:
+        prim_type = prim[1]
+        
+        if prim_type == 'face':
+            _, _, face, proj, f_col, l_col = prim
+            p1 = proj.Points[face[0]].Coordinates
+            p2 = proj.Points[face[1]].Coordinates
+            p3 = proj.Points[face[2]].Coordinates
+            
+            pts = [
+                (int(width / 2 + p1[0]), int(height / 2 + p1[1])),
+                (int(width / 2 + p2[0]), int(height / 2 + p2[1])),
+                (int(width / 2 + p3[0]), int(height / 2 + p3[1]))
+            ]
+            
+            if f_col is not False and f_col is not None:
+                pygame.draw.polygon(screen, f_col, pts)
+            if render_config.get("lines", True) and l_col is not False and l_col is not None:
+                pygame.draw.polygon(screen, l_col, pts, 1)
+                
+        elif prim_type == 'edge':
+            _, _, edge, proj, l_col = prim
+            p1 = proj.Points[edge[0]].Coordinates
+            p2 = proj.Points[edge[1]].Coordinates
+            
+            pt1 = (int(width / 2 + p1[0]), int(height / 2 + p1[1]))
+            pt2 = (int(width / 2 + p2[0]), int(height / 2 + p2[1]))
+            
+            if l_col is not False and l_col is not None:
+                pygame.draw.line(screen, l_col, pt1, pt2, 1)
+            
+        elif prim_type == 'node':
+            depth, _, idx, proj, n_col, r_3d = prim
+            p = proj.Points[idx].Coordinates
+            center = (int(width / 2 + p[0]), int(height / 2 + p[1]))
+            
+            r_2d = int(r_3d * focal_length / depth)
+            if r_2d < 1:
+                r_2d = 1
+                
+            if n_col is not False and n_col is not None:
+                if render_config.get("node_style", "dot") == "impostor":
+                    draw_impostor_sphere(screen, center, r_2d, n_col)
+                else:
+                    pygame.draw.circle(screen, n_col, center, r_2d)
+
+
+def load_json_obj(filepath, scale=150.0):
+    import json
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+        
+    obj = Obj()
+    obj.Points = [Point(np.array([p[0] * scale, -p[1] * scale, p[2] * scale])) for p in data["points"]]
+    obj.Faces = [tuple(f) for f in data["faces"]]
+    obj.Populate_Edges_From_Faces()
+    return obj

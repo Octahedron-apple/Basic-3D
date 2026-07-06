@@ -2,18 +2,9 @@ import sys
 import json
 import pygame
 import numpy as np
-from functions import Obj, Camera, Point
+from functions import Obj, Camera, Point, render_scene, load_json_obj
 from controls import get_movement_input, get_rotation_input
 from char import Char_to_Object
-
-def load_json_obj(filepath, scale=150.0):
-    with open(filepath, 'r') as f:
-        data = json.load(f)
-        
-    obj = Obj()
-    obj.Points = [Point(np.array([p[0] * scale, -p[1] * scale, p[2] * scale])) for p in data["points"]]
-    obj.Faces = data["faces"]
-    return obj
 
 def create_text_obj(text_string, scale_factor=12, spacing=150):
     text_obj = Obj()
@@ -29,6 +20,7 @@ def create_text_obj(text_string, scale_factor=12, spacing=150):
         for face in char_obj.Faces:
             text_obj.Faces.append((face[0]+vertex_offset, face[1]+vertex_offset, face[2]+vertex_offset))
             
+    text_obj.Populate_Edges_From_Faces()
     return text_obj
 
 def main():
@@ -49,6 +41,57 @@ def main():
     clock = pygame.time.Clock()
     fps = 60
 
+    # Hand-crafted premium color themes
+    COLOR_THEMES = [
+        {
+            "name": "Neon Cyberpunk",
+            "background": (10, 10, 20),
+            "face": (40, 20, 80),
+            "line": (0, 255, 240),
+            "node": (255, 0, 128)
+        },
+        {
+            "name": "Sunset Glow",
+            "background": (30, 10, 20),
+            "face": (120, 40, 60),
+            "line": (255, 100, 50),
+            "node": (255, 210, 100)
+        },
+        {
+            "name": "Forest Mint",
+            "background": (10, 25, 20),
+            "face": (20, 60, 45),
+            "line": (50, 200, 120),
+            "node": (180, 255, 200)
+        },
+        {
+            "name": "Lava / Inferno",
+            "background": (15, 5, 5),
+            "face": (80, 15, 10),
+            "line": (255, 69, 0),
+            "node": (255, 215, 0)
+        },
+        {
+            "name": "Monochrome Slate",
+            "background": (15, 17, 20),
+            "face": (40, 44, 52),
+            "line": (160, 172, 185),
+            "node": (240, 244, 248)
+        }
+    ]
+
+    theme_idx = 0
+    active_theme = COLOR_THEMES[theme_idx]
+
+    # Render configuration defaults
+    render_config = {
+        "faces": True,
+        "lines": True,
+        "nodes": True,
+        "node_style": "dot",  # "dot" or "impostor"
+        "default_node_radius": 6.0
+    }
+
     camera = Camera(np.array([0.0, 0.0, -1000.0]))
     focal_length = 600
 
@@ -60,6 +103,17 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
+                elif event.key == pygame.K_c:
+                    theme_idx = (theme_idx + 1) % len(COLOR_THEMES)
+                    active_theme = COLOR_THEMES[theme_idx]
+                elif event.key == pygame.K_n:
+                    render_config["nodes"] = not render_config["nodes"]
+                elif event.key == pygame.K_l:
+                    render_config["lines"] = not render_config["lines"]
+                elif event.key == pygame.K_f:
+                    render_config["faces"] = not render_config["faces"]
+                elif event.key == pygame.K_i:
+                    render_config["node_style"] = "impostor" if render_config["node_style"] == "dot" else "dot"
 
         dx, dy, dz = get_movement_input()
         rx, ry = get_rotation_input()
@@ -72,55 +126,25 @@ def main():
         if ry != 0:
             camera.Rotate(ry * 2.0, 0)
 
-        screen.fill((20, 20, 30))
+        # Fill background based on active theme
+        screen.fill(active_theme["background"])
 
+        # Auto-rotation
         penger_obj.Rotate(1.5, 1)
 
-        projected_penger = penger_obj.Project_3D_To_2D(camera, focal_length)
-        projected_text = text_obj.Project_3D_To_2D(camera, focal_length)
-
-        face_depths = []
+        # Merge penguin and text scene objects with color overrides
+        # Penguin overrides: Face: (0, 100, 200), Line: (255, 255, 255), Node: fallback to theme
+        # Text overrides: Face: (0, 150, 255), Line: False (no outline), Node: False (no node dots)
+        penger_overrides = ((0, 100, 200), (255, 255, 255), None)
+        text_overrides = ((0, 150, 255), False, False)
         
-        for face in penger_obj.Faces:
-            try:
-                z0 = projected_penger.Points[face[0]].Coordinates[2]
-                z1 = projected_penger.Points[face[1]].Coordinates[2]
-                z2 = projected_penger.Points[face[2]].Coordinates[2]
-                avg_z = (z0 + z1 + z2) / 3.0
-                
-                if z0 > 0.1 and z1 > 0.1 and z2 > 0.1:
-                    face_depths.append((avg_z, face, projected_penger, (0, 100, 200), True))
-            except IndexError:
-                continue
-                
-        for face in text_obj.Faces:
-            try:
-                z0 = projected_text.Points[face[0]].Coordinates[2]
-                z1 = projected_text.Points[face[1]].Coordinates[2]
-                z2 = projected_text.Points[face[2]].Coordinates[2]
-                avg_z = (z0 + z1 + z2) / 3.0
-                
-                if z0 > 0.1 and z1 > 0.1 and z2 > 0.1:
-                    face_depths.append((avg_z, face, projected_text, (0, 150, 255), False))
-            except IndexError:
-                continue
-        
-        face_depths.sort(key=lambda x: x[0], reverse=True)
+        scene_objects = [
+            (penger_obj, penger_overrides),
+            (text_obj, text_overrides)
+        ]
 
-        for depth, face, proj, color, draw_lines in face_depths:
-            p1 = proj.Points[face[0]].Coordinates
-            p2 = proj.Points[face[1]].Coordinates
-            p3 = proj.Points[face[2]].Coordinates
-            
-            pts = [
-                (int(width / 2 + p1[0]), int(height / 2 + p1[1])),
-                (int(width / 2 + p2[0]), int(height / 2 + p2[1])),
-                (int(width / 2 + p3[0]), int(height / 2 + p3[1]))
-            ]
-            
-            pygame.draw.polygon(screen, color, pts)
-            if draw_lines:
-                pygame.draw.polygon(screen, (255, 255, 255), pts, 1)
+        # Render combined scene
+        render_scene(screen, width, height, camera, focal_length, scene_objects, render_config, active_theme)
 
         pygame.display.flip()
         clock.tick(fps)
