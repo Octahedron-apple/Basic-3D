@@ -49,6 +49,7 @@ The real-time Keplerian minor solar system simulation (dwarf planets, asteroid b
 | `char.py` | Converts characters to 3D `Obj` instances using the font atlas |
 | `convert.py` | Converts `.obj` files to the engine's `.json` format |
 | `tests/test_functions.py` | Unit tests for all core engine functions |
+| `bench/benchmark.py` | Headless performance benchmarking script for math vs draw timings |
 
 ## Requirements
 
@@ -128,6 +129,26 @@ All applications share a first-person 6DOF control scheme. Movement and rotation
 | `[` / `]` | Slow down / speed up simulation |
 | `Space` | Pause / resume simulation |
 | `-` / `=` | Zoom out / in |
+
+## Performance & Benchmarks
+
+The engine features an instrumented benchmark profiling the time spent on vector calculations (3D-to-2D projection, perspective scaling, and Painters depth sorting) vs the actual Pygame rendering draw calls on screen. 
+
+Benchmarking yields the following results on active display window:
+
+| Scene / Workload | Math & Sort Calc (ms) | Pygame Draw Call (ms) | Total Frame (ms) | Avg FPS | 10% Low FPS | 1% Low FPS |
+| --- | --- | --- | --- | --- | --- | --- |
+| UV Sphere (Faces + Edges + Nodes) | 2.964 | 5.779 | 8.744 | 114.4 | 84.3 | 82.8 |
+| 3D Text Engine (Faces + Edges) | 3.918 | 5.480 | 9.398 | 106.4 | 105.3 | 94.1 |
+| Solar System Mock (Orbits + 800 Nodes) | 4.936 | 2.364 | 7.299 | 137.0 | 132.6 | 124.0 |
+| Penguin Showcase (penger.py Mock) | 6.414 | 10.371 | 16.785 | 59.6 | 58.8 | 56.3 |
+| Character Test (test_chars.py - Demo Testing) | 4.536 | 7.095 | 11.632 | 86.0 | 84.0 | 81.2 |
+| Font Generation Atlas (fontgen) | 12.614 | 0.000 | 12.614 | 79.3 | 79.3 | 79.3 |
+
+To run the benchmark yourself:
+```bash
+python bench/benchmark.py
+```
 
 ## Architecture
 
